@@ -1,5 +1,4 @@
 import React, { Component, Fragment } from "react";
-import openSocket from "socket.io-client";
 import { withRouter } from "react-router-dom";
 import Post from "../../components/Feed/Post/Post";
 import Button from "../../components/Button/Button";
@@ -22,88 +21,15 @@ class Feed extends Component {
     editLoading: false,
   };
 
-  // componentDidMount() {
-  //   const token = this.props.token || localStorage.getItem('token');
-  //   fetch("http://localhost:8080/auth/status", {
-  //     method: "GET",
-  //     headers: {
-  //       Authorization: "Bearer " + token,
-  //     },
-  //   }
-  //   )
-  //     .then((res) => {
-  //       if (res.status !== 200) {
-  //         throw new Error("Failed to fetch user status.");
-  //       }
-  //       return res.json();
-  //     })
-  //     .then((resData) => {
-  //       this.setState({ status: resData.status });
-  //     })
-  //     .catch(this.catchError);
-
-  //   this.loadPosts();
-  // }
-
   componentDidMount() {
     const token = this.props.token || localStorage.getItem("token");
     if (token) {
       this.fetchUserStatus(token);
       this.loadPosts(token);
-      const socket = openSocket("http://localhost:8080");
-      socket.on("posts", (data) => {
-        console.log(data, 'data');
-        if (data.action === "create") {
-          this.addPost(data.post);
-        } else if (data.action === "update") {
-          this.updatedPost(data.post);
-        } else if (data.action === "delete") {
-          this.deletePost(data.post);
-          this.loadPosts();
-        }
-      });
     } else {
       this.logoutHandler();
     }
   }
-
-  addPost = (post) => {
-    this.setState((prevState) => {
-      const updatedPosts = [...prevState.posts];
-      if (prevState.postPage === 1) {
-        if (prevState.posts.length >= 5) {
-          updatedPosts.pop();
-        }
-        updatedPosts.unshift(post);
-      }
-      return {
-        posts: updatedPosts,
-        totalPosts: prevState.totalPosts + 1,
-      };
-    });
-  };
-
-  updatedPost = (post) => {
-    this.setState((prevState) => {
-      const updatedPosts = [...prevState.posts];
-      const postIndex = updatedPosts.findIndex((p) => p._id === post._id);
-      updatedPosts[postIndex] = post;
-      return {
-        posts: updatedPosts,
-      };
-    });
-  }
-
-  deletePost = (postId) => {
-    this.setState((prevState) => {
-      const updatedPosts = prevState.posts.filter((p) => p._id !== postId);
-      return {
-        posts: updatedPosts,
-        totalPosts: prevState.totalPosts - 1,
-       
-      };
-    });
-  };
 
   logoutHandler = () => {
     this.setState({ isAuth: false, token: null });
