@@ -76,7 +76,7 @@ class Feed extends Component {
     const graphqlQuery = {
       query: ` 
         {
-          getPosts {
+          getPosts(page: ${page}) {
           posts {
             title
             content
