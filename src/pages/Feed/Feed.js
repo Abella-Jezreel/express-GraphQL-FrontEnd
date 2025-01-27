@@ -163,101 +163,137 @@ class Feed extends Component {
     this.setState({ isEditing: false, editPost: null });
   };
 
-  finishEditHandler = postData => {
-    const token = this.props.token || localStorage.getItem('token');
+  finishEditHandler = (postData) => {
+    const token = this.props.token || localStorage.getItem("token");
     this.setState({
-      editLoading: true
+      editLoading: true,
     });
     const formData = new FormData();
-    formData.append('image', postData.image);
+    formData.append("image", postData.image);
     if (this.state.editPost) {
-      formData.append('oldPath', this.state.editPost.imagePath);
+      formData.append("oldPath", this.state.editPost.imagePath);
     }
-    fetch('http://localhost:8080/post-image', {
-      method: 'PUT',
+    fetch("http://localhost:8080/post-image", {
+      method: "PUT",
       headers: {
-        Authorization: 'Bearer ' + token
+        Authorization: "Bearer " + token,
       },
-      body: formData
+      body: formData,
     })
-      .then(res => res.json())
-      .then(fileResData => {
-        const imageUrl = fileResData.filePath.replace(/\\/g, '/'); ;
-        let graphqlQuery = {
-          query: `
-          mutation {
-            createPost(postInput: {title: "${postData.title}", content: "${
-            postData.content
-          }", imageUrl: "${imageUrl}"}) {
-              _id
-              title
-              content
-              imageUrl
-              creator {
-                name
-              }
-              createdAt
-            }
-          }
-        `
-        };
+      .then((res) => res.json())
+      .then((fileResData) => {
+        const imageUrl = fileResData.filePath.replace(/\\/g, "/");
+        let graphqlQuery;
 
-        return fetch('http://localhost:8080/graphql', {
-          method: 'POST',
+        if (this.state.editPost && this.state.editPost._id) {
+          // Update existing post
+          graphqlQuery = {
+            query: `
+              mutation {
+                updatePost(postId: "${this.state.editPost._id}", postInput: {title: "${postData.title}", content: "${postData.content}", imageUrl: "${imageUrl}"}) {
+                  _id
+                  title
+                  content
+                  imageUrl
+                  creator {
+                    name
+                  }
+                  createdAt
+                }
+              }
+            `,
+          };
+        } else {
+          // Create new post
+          graphqlQuery = {
+            query: `
+              mutation {
+                createPost(postInput: {title: "${postData.title}", content: "${postData.content}", imageUrl: "${imageUrl}"}) {
+                  _id
+                  title
+                  content
+                  imageUrl
+                  creator {
+                    name
+                  }
+                  createdAt
+                }
+              }
+            `,
+          };
+        }
+
+        console.log("GraphQL Query:", graphqlQuery); // Log the GraphQL query
+
+        return fetch("http://localhost:8080/graphql", {
+          method: "POST",
           body: JSON.stringify(graphqlQuery),
           headers: {
-            Authorization: 'Bearer ' + token,
-            'Content-Type': 'application/json'
-          }
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
         });
       })
-      .then(res => {
+      .then((res) => {
         return res.json();
       })
-      .then(resData => {
+      .then((resData) => {
+        console.log("GraphQL Response:", resData); // Log the GraphQL response
         if (resData.errors && resData.errors[0].status === 422) {
           throw new Error(
             "Validation failed. Make sure the email address isn't used yet!"
           );
         }
         if (resData.errors) {
-          throw new Error('User login failed!');
+          throw new Error("User login failed!");
         }
-        console.log(resData);
-        const post = {
-          _id: resData.data.createPost._id,
-          title: resData.data.createPost.title,
-          content: resData.data.createPost.content,
-          creator: resData.data.createPost.creator.name,
-          createdAt: resData.data.createPost.createdAt,
-          imagePath: resData.data.createPost.imageUrl
+        let post;
+        if (this.state.editPost && this.state.editPost._id) {
+          post = resData.data.updatePost;
+        } else {
+          post = resData.data.createPost;
+        }
+
+        if (!post) {
+          throw new Error("Post creation/update failed!");
+        }
+
+        console.log("Post Data:", post); // Log the post data
+
+        const updatedPost = {
+          _id: post._id,
+          title: post.title,
+          content: post.content,
+          creator: post.creator,
+          createdAt: post.createdAt,
+          imagePath: post.imageUrl,
         };
-        this.setState(prevState => {
+        this.setState((prevState) => {
           let updatedPosts = [...prevState.posts];
           if (prevState.editPost) {
             const postIndex = prevState.posts.findIndex(
-              p => p._id === prevState.editPost._id
+              (p) => p._id === prevState.editPost._id
             );
-            updatedPosts[postIndex] = post;
+            updatedPosts[postIndex] = updatedPost;
           } else {
             updatedPosts.pop();
-            updatedPosts.unshift(post);
+            updatedPosts.unshift(updatedPost);
           }
           return {
             posts: updatedPosts,
             isEditing: false,
             editPost: null,
-            editLoading: false
+            editLoading: false,
           };
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         this.setState({
           isEditing: false,
           editPost: null,
           editLoading: false,
-          error: err
+          error: err,
         });
       });
   };
