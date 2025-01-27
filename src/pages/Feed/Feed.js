@@ -79,6 +79,7 @@ class Feed extends Component {
         {
           getPosts(page: ${page}) {
           posts {
+            _id
             title
             content
             imageUrl
@@ -181,7 +182,7 @@ class Feed extends Component {
     })
       .then(res => res.json())
       .then(fileResData => {
-        const imageUrl = fileResData.filePath;
+        const imageUrl = fileResData.filePath.replace(/\\/g, '/'); ;
         let graphqlQuery = {
           query: `
           mutation {
@@ -227,7 +228,7 @@ class Feed extends Component {
           _id: resData.data.createPost._id,
           title: resData.data.createPost.title,
           content: resData.data.createPost.content,
-          creator: resData.data.createPost.creator,
+          creator: resData.data.createPost.creator.name,
           createdAt: resData.data.createPost.createdAt,
           imagePath: resData.data.createPost.imageUrl
         };
