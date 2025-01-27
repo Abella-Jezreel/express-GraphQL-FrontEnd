@@ -84,6 +84,7 @@ class Feed extends Component {
             content
             imageUrl
             creator {
+              _id
               name
             }
             createdAt
@@ -196,6 +197,7 @@ class Feed extends Component {
                   content
                   imageUrl
                   creator {
+                    _id
                     name
                   }
                   createdAt
@@ -214,6 +216,7 @@ class Feed extends Component {
                   content
                   imageUrl
                   creator {
+                    _id
                     name
                   }
                   createdAt
@@ -303,10 +306,22 @@ class Feed extends Component {
   };
 
   deletePostHandler = (postId) => {
+    console.log("Deleting post with ID:", postId);
+    const graphqlQuery = {
+      query: `
+        mutation {
+          deletePost(postId: "${postId}")
+        }
+      `,
+    };
     this.setState({ postsLoading: true });
-    fetch(`http://localhost:8080/feed/post/${postId}`, {
-      method: "DELETE",
-      headers: { Authorization: "Bearer " + this.props.token },
+    fetch("http://localhost:8080/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + this.props.token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(graphqlQuery),
     })
       .then((res) => {
         if (res.status !== 200 && res.status !== 201) {
@@ -387,6 +402,8 @@ class Feed extends Component {
                   key={index}
                   id={post._id}
                   author={post.creator.name}
+                  loginUserId={this.props.userId}
+                  userId={post.creator._id}
                   date={new Date(post.createdAt).toLocaleDateString("en-US")}
                   title={post.title}
                   image={post.imageUrl}

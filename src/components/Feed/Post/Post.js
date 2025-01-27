@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from '../../Image/Image';
 import Button from '../../Button/Button';
 import './Post.css';
 
@@ -19,12 +18,16 @@ const post = props => (
       <Button mode="flat" link={props.id}>
         View
       </Button>
+      {props.loginUserId === props.userId && (
       <Button mode="flat" onClick={props.onStartEdit}>
         Edit
       </Button>
-      <Button mode="flat" design="danger" onClick={props.onDelete}>
-        Delete
-      </Button>
+       )}
+      {props.loginUserId === props.userId && (
+        <Button mode="flat" design="danger" onClick={props.onDelete}>
+          Delete
+        </Button>
+      )}
     </div>
   </article>
 );
