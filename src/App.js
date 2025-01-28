@@ -62,13 +62,17 @@ class App extends Component {
     this.setState({ authLoading: true });
     const graphqlQuery = {
       query: `
-          { 
-            login(email: "${authData.email}", password: "${authData.password}") {
-              token
-              userId
-            }
+        query Login($email: String!, $password: String!) {
+          login(email: $email, password: $password) {
+            token
+            userId
           }
-        `,
+        }
+      `,
+      variables: {
+        email: authData.email,
+        password: authData.password,
+      },
     };
     fetch("http://localhost:8080/graphql", {
       method: "POST",
@@ -88,7 +92,7 @@ class App extends Component {
         return res.json();
       })
       .then((resData) => {
-        console.log(resData, 'resData');
+        console.log(resData, "resData");
         this.setState({
           isAuth: true,
           token: resData.data.login.token,
@@ -97,7 +101,7 @@ class App extends Component {
         });
         this.props.history.push("/");
         localStorage.setItem("token", resData.data.login.token);
-        localStorage.setItem("userId",resData.data.login.userId);
+        localStorage.setItem("userId", resData.data.login.userId);
         const remainingMilliseconds = 60 * 60 * 1000;
         const expiryDate = new Date(
           new Date().getTime() + remainingMilliseconds
@@ -120,14 +124,17 @@ class App extends Component {
     this.setState({ authLoading: true });
     const graphqlQuery = {
       query: `
-          mutation {
-            createUser(userInput: {email: "${authData.signupForm.email.value}", name: "${authData.signupForm.name.value}", password: "${authData.signupForm.password.value}"}) {
-              _id
-              email
-              name
-            }
+        query Login($email: String!, $password: String!) {
+          login(email: $email, password: $password) {
+            token
+            userId
           }
-        `,
+        }
+      `,
+      variables: {
+        email: authData.email,
+        password: authData.password,
+      },
     };
     fetch("http://localhost:8080/graphql", {
       method: "POST",
