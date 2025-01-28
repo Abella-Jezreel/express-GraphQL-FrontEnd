@@ -8,7 +8,6 @@ import Paginator from "../../components/Paginator/Paginator";
 import Loader from "../../components/Loader/Loader";
 import ErrorHandler from "../../components/ErrorHandler/ErrorHandler";
 import "./Feed.css";
-import image from "../../components/Image/Image";
 
 class Feed extends Component {
   state = {
@@ -41,11 +40,24 @@ class Feed extends Component {
   };
 
   fetchUserStatus = (token) => {
-    fetch("http://localhost:8080/auth/status", {
-      method: "GET",
+    const graphqlQuery = {
+      query: `
+        {
+          getUser {
+            _id
+            name
+            status
+          }
+        }
+      `,
+    };
+    fetch("http://localhost:8080/graphql", {
+      method: "POST",
       headers: {
         Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify(graphqlQuery),
     })
       .then((res) => {
         if (res.status !== 200) {
@@ -54,7 +66,7 @@ class Feed extends Component {
         return res.json();
       })
       .then((resData) => {
-        this.setState({ status: resData.status });
+        this.setState({ status: resData.data.getUser.status });
       })
       .catch(this.catchError);
   };
@@ -123,15 +135,24 @@ class Feed extends Component {
 
   statusUpdateHandler = (event) => {
     event.preventDefault();
-    fetch("http://localhost:8080/auth/status", {
-      method: "PATCH",
+
+    const graphqlQuery = {
+      query: `
+        mutation {
+          updateStatus(status: "${this.state.status}") {
+            status
+          }
+        }
+      `,
+    };
+
+    fetch("http://localhost:8080/graphql", {
+      method: "POST",
       headers: {
         Authorization: "Bearer " + this.props.token,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        status: this.state.status,
-      }),
+      body: JSON.stringify(graphqlQuery),
     })
       .then((res) => {
         if (res.status !== 200 && res.status !== 201) {
@@ -187,7 +208,6 @@ class Feed extends Component {
         let graphqlQuery;
 
         if (this.state.editPost && this.state.editPost._id) {
-          // Update existing post
           graphqlQuery = {
             query: `
               mutation {
@@ -226,7 +246,7 @@ class Feed extends Component {
           };
         }
 
-        console.log("GraphQL Query:", graphqlQuery); // Log the GraphQL query
+        console.log("GraphQL Query:", graphqlQuery);
 
         return fetch("http://localhost:8080/graphql", {
           method: "POST",
@@ -241,7 +261,7 @@ class Feed extends Component {
         return res.json();
       })
       .then((resData) => {
-        console.log("GraphQL Response:", resData); // Log the GraphQL response
+        console.log("GraphQL Response:", resData);
         if (resData.errors && resData.errors[0].status === 422) {
           throw new Error(
             "Validation failed. Make sure the email address isn't used yet!"
@@ -261,7 +281,7 @@ class Feed extends Component {
           throw new Error("Post creation/update failed!");
         }
 
-        console.log("Post Data:", post); // Log the post data
+        console.log("Post Data:", post);
 
         const updatedPost = {
           _id: post._id,
